@@ -1,0 +1,30 @@
+#!/bin/bash
+
+INVENTORY="$HOME/Documents/ansible-config/ansible-playbooks/inventories/hosts.ini"
+
+HOSTNAME="$1"
+IP="$2"
+GROUP="$3"
+
+if [ -z "$HOSTNAME" ] || [ -z "$IP" ] || [ -z "$GROUP" ]; then
+  echo "Usage: add-host <hostname> <ip> <group>"
+  exit 1
+fi
+
+# Prevent duplicates
+if grep -q "^$HOSTNAME " "$INVENTORY"; then
+  echo "Host already exists in inventory."
+  exit 1
+fi
+
+# Create group if it doesn't exist
+if ! grep -q "^\[$GROUP\]" "$INVENTORY"; then
+  echo "" >> "$INVENTORY"
+  echo "[$GROUP]" >> "$INVENTORY"
+fi
+
+# Add host under group
+sed -i "/^\[$GROUP\]/a $HOSTNAME ansible_host=$IP ansible_user=ansible" "$INVENTORY"
+
+echo "Host added:"
+echo "$HOSTNAME -> $IP ($GROUP)"
