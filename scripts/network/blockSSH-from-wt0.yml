@@ -1,0 +1,41 @@
+---
+- name: Configure UFW firewall
+  hosts: all
+  become: true
+  tasks:
+    - name: Install UFW if not present
+      ansible.builtin.package:
+        name: ufw
+        state: present
+
+    - name: Ensure UFW is enabled
+      ansible.builtin.ufw:
+        state: enabled
+        direction: incoming
+        policy: deny
+
+    - name: Allow SSH from local network only
+      ansible.builtin.ufw:
+        rule: allow
+        proto: tcp
+        port: 22
+        src: 192.168.0.0/16  # <-- change to your local network CIDR
+
+    - name: Deny SSH on NetBird interface (wt0)
+      ansible.builtin.command: >
+        ufw deny in on wt0 to any port 22
+      args:
+        warn: false
+
+    - name: Reload UFW to apply rules
+      ansible.builtin.command: ufw reload
+      args:
+        warn: false
+
+    - name: Show UFW status
+      ansible.builtin.command: ufw status verbose
+      register: ufw_status
+
+    - name: Display UFW status
+      ansible.builtin.debug:
+        var: ufw_status.stdout
